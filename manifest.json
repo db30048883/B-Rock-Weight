@@ -1,0 +1,10 @@
+
+{
+  "name": "B Rock Weigher",
+  "short_name": "B Rock",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "description": "Offline tool to calculate and log B Rock weights.",
+  "icons": []
+}
