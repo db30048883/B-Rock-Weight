@@ -1,0 +1,101 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>B Rock Weigher</title>
+  <link rel="manifest" href="manifest.json" />
+</head>
+<body>
+  <h1>B Rock Weigher</h1>
+  <p>Enter the weights of up to 100 stones (in pounds):</p>
+  <div id="inputs"></div>
+  <button onclick="calculate()">Calculate</button>
+  <button onclick="saveLog()">Save Result to Log</button>
+  <button onclick="showLog()">View Saved Logs</button>
+  <div id="result"></div>
+  <div id="log"></div>
+
+  <script>
+    const supabase = supabase.createClient('https://myyyjfkdytezewbuxkii.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im15eWl5ZmtkeXR6ZXpid2t4aWlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk3NjU2NjksImV4cCI6MjA2NTM0MTY2OX0.BqJ8fUglMcLJJfr8RejhOJELcwSA9f0tp10Svk-ps0M');
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js')
+        .then(() => console.log('Service Worker Registered'));
+    }
+
+    const inputContainer = document.getElementById('inputs');
+    for (let i = 0; i < 100; i++) {
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.placeholder = `Stone ${i + 1}`;
+      input.min = 0;
+      input.inputMode = 'decimal';
+      inputContainer.appendChild(input);
+    }
+
+    let lastResult = '';
+    let lastData = {};
+
+    function calculate() {
+      const inputs = document.querySelectorAll('#inputs input');
+      let weights = [];
+      let passing = 0;
+
+      inputs.forEach(input => {
+        const val = parseFloat(input.value);
+        if (!isNaN(val)) {
+          weights.push(val);
+          if (val <= 1250) passing++;
+        }
+      });
+
+      if (weights.length === 0) {
+        document.getElementById('result').innerHTML = 'Please enter at least one valid weight.';
+        return;
+      }
+
+      const total = weights.reduce((acc, val) => acc + val, 0);
+      const average = total / weights.length;
+      const percentPassing = (passing / weights.length) * 100;
+
+      let resultHTML = `Total Weight: ${total.toFixed(2)} lbs<br>`;
+      resultHTML += `Average Weight: ${average.toFixed(2)} lbs<br>`;
+      resultHTML += `Percent Passing (≤ 1250 lbs): ${percentPassing.toFixed(2)}%`;
+
+      document.getElementById('result').innerHTML = resultHTML;
+      lastResult = resultHTML;
+      lastData = {
+        total_weight: total,
+        average_weight: average,
+        percent_passing: percentPassing,
+        timestamp: new Date().toISOString()
+      };
+    }
+
+    async function saveLog() {
+      const logs = JSON.parse(localStorage.getItem('b_rock_logs') || '[]');
+      const timestamp = new Date().toLocaleString();
+      logs.push({ timestamp, result: lastResult });
+      localStorage.setItem('b_rock_logs', JSON.stringify(logs));
+      alert('Result saved locally!');
+
+      if (lastData.total_weight) {
+        await supabase.from('b_rock_logs').insert([lastData]);
+      }
+    }
+
+    function showLog() {
+      const logs = JSON.parse(localStorage.getItem('b_rock_logs') || '[]');
+      const logDiv = document.getElementById('log');
+      logDiv.innerHTML = '<h3>Saved Logs:</h3>' + logs.map(log => `
+        <div>
+          <strong>${log.timestamp}</strong><br>
+          ${log.result}
+        </div>
+      `).join('');
+    }
+  </script>
+</body>
+</html>
