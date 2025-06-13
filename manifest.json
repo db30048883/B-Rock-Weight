@@ -1,1 +1,0 @@
-{"name": "Armor Stone Weigher", "short_name": "Stone Weigher", "start_url": "./index.html", "display": "standalone", "background_color": "#ffffff", "description": "A simple app to calculate total and average armor stone weights.", "icons": [{"src": "icon.png", "type": "image/png", "sizes": "512x512"}]}
