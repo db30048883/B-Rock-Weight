@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>B Rock Weigher</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="manifest.json">
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js')
+          .then(reg => console.log('SW registered:', reg))
+          .catch(err => console.error('SW failed:', err));
+      });
+    }
+  </script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f5f6f7;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      padding: 20px 40px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      max-width: 500px;
+      width: 100%;
+    }
+    h1 {
+      text-align: center;
+    }
+    input[type="number"] {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    #results, #savedLogs {
+      margin-top: 20px;
+    }
+    pre {
+      background-color: #eee;
+      padding: 10px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>B Rock Weigher</h1>
+    <p>Enter the weights of up to 100 stones (in pounds):</p>
+    <form id="bRockForm">
+      <div id="inputs"></div>
+      <button type="button" onclick="calculate()">Calculate</button>
+      <button type="button" onclick="saveLog()">Save Result to Log</button>
+      <button type="button" onclick="viewSavedLogs()">View Saved Logs</button>
+    </form>
+    <div id="results"></div>
+    <div id="savedLogs"></div>
+  </div>
+
+  <script>
+    const inputContainer = document.getElementById('inputs');
+    for (let i = 1; i <= 100; i++) {
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.placeholder = `Stone ${i}`;
+      input.className = 'stoneInput';
+      inputContainer.appendChild(input);
+    }
+
+    let currentLog = {};
+
+    function calculate() {
+      const inputs = document.querySelectorAll('.stoneInput');
+      const weights = Array.from(inputs)
+        .map(input => parseFloat(input.value))
+        .filter(weight => !isNaN(weight));
+
+      const total = weights.length;
+      const passing = weights.filter(w => w <= 1250).length;
+      const percentPassing = total > 0 ? (passing / total * 100).toFixed(2) : 0;
+
+      currentLog = {
+        timestamp: new Date().toLocaleString(),
+        weights,
+        total,
+        passing,
+        percentPassing
+      };
+
+      document.getElementById('results').innerHTML = `
+        <p>Total rocks weighed: ${total}</p>
+        <p>Passing rocks (≤ 1250 lbs): ${passing}</p>
+        <p><strong>Percent Passing:</strong> ${percentPassing}%</p>
+      `;
+    }
+
+    function saveLog() {
+      if (!currentLog.timestamp) {
+        alert('Please calculate first.');
+        return;
+      }
+      const logs = JSON.parse(localStorage.getItem('bRockLogs') || '[]');
+      logs.push(currentLog);
+      localStorage.setItem('bRockLogs', JSON.stringify(logs));
+      alert('Log saved!');
+    }
+
+    function viewSavedLogs() {
+      const logs = JSON.parse(localStorage.getItem('bRockLogs') || '[]');
+      if (logs.length === 0) {
+        document.getElementById('savedLogs').innerHTML = '<p>No saved logs found.</p>';
+        return;
+      }
+      const summary = logs.map(log => {
+        return `• ${log.timestamp} — ${log.total} rocks, ${log.passing} passing (${log.percentPassing}%)`;
+      }).join('\n');
+
+      document.getElementById('savedLogs').innerHTML = `
+        <h3>Saved Logs (${logs.length})</h3>
+        <pre>${summary}</pre>
+      `;
+    }
+  </script>
+</body>
+</html>
