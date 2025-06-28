@@ -49,24 +49,24 @@
     .numpad {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
+      gap: 4px;
       margin-bottom: 20px;
     }
     .numpad button {
       width: 100%;
-      padding: 24px;
+      padding: 28px;
       background-color: #28a745;
       color: white;
       border: none;
       border-radius: 10px;
-      font-size: 1.5rem;
+      font-size: 1.6rem;
       cursor: pointer;
       transition: background-color 0.2s;
       touch-action: manipulation;
     }
     #enterWeight {
-      padding: 20px;
-      font-size: 1.4rem;
+      padding: 24px;
+      font-size: 1.5rem;
     }
     .numpad button:hover {
       background-color: #3a3a3a;
@@ -163,113 +163,110 @@
   </div>
   <div id="toast" class="toast"></div>
   <script>
-    let rockWeights = JSON.parse(localStorage.getItem('bRockAutosave') || '[]');
+    let rockWeights = [];
+
+    function showToast(msg) {
+      const toast = document.getElementById("toast");
+      toast.textContent = msg;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2000);
+    }
 
     function updateDisplay() {
-      localStorage.setItem('bRockAutosave', JSON.stringify(rockWeights));
       const total = rockWeights.length;
       const totalWeight = rockWeights.reduce((a, b) => a + b, 0);
-      const avgWeight = total > 0 ? (totalWeight / total).toFixed(2) : 0;
-      const p540 = rockWeights.filter(w => w <= 540).length;
-      const p150 = rockWeights.filter(w => w <= 150).length;
-      const p75 = rockWeights.filter(w => w <= 75).length;
-      const percent540 = total ? (p540 / total * 100).toFixed(2) : 0;
-      const percent150 = total ? (p150 / total * 100).toFixed(2) : 0;
-      const percent75 = total ? (p75 / total * 100).toFixed(2) : 0;
+      const avg = total ? (totalWeight / total).toFixed(2) : 0;
+      const passing540 = rockWeights.filter(w => w <= 540).length;
+      const passing150 = rockWeights.filter(w => w <= 150).length;
+      const passing75 = rockWeights.filter(w => w <= 75).length;
 
-      document.getElementById('results').innerHTML = `
-        <p>Total rocks weighed: ${total}</p>
+      document.getElementById("results").innerHTML = `
+        <p>Total rocks: ${total}</p>
         <p>Total weight: ${totalWeight.toFixed(2)} lbs</p>
-        <p>Average weight: ${avgWeight} lbs</p>
-        <details><summary>Percent Passing</summary>
-          <p>≤ 540 lbs: ${percent540}%</p>
-          <p>≤ 150 lbs: ${percent150}%</p>
-          <p>≤ 75 lbs: ${percent75}%</p>
-        </details>
-      `;
+        <p>Average weight: ${avg} lbs</p>
+        <details><summary>Passing Percentages</summary>
+          <p>≤ 540 lbs: ${(passing540 / total * 100 || 0).toFixed(2)}%</p>
+          <p>≤ 150 lbs: ${(passing150 / total * 100 || 0).toFixed(2)}%</p>
+          <p>≤ 75 lbs: ${(passing75 / total * 100 || 0).toFixed(2)}%</p>
+        </details>`;
 
-      document.getElementById('rockList').innerHTML = `<p><strong>Rocks Entered:</strong></p><pre>${rockWeights.map((w, i) => `${i + 1}: ${w} lbs`).join('\n')}</pre>`;
+      document.getElementById("rockList").innerHTML = `<pre>${rockWeights.map((w, i) => `${i + 1}: ${w}`).join("\n")}</pre>`;
     }
 
-    function showToast(message) {
-      const toast = document.getElementById('toast');
-      toast.textContent = message;
-      toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 3000);
-    }
-
-    document.querySelectorAll('.numpad button').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const val = btn.textContent;
-        if (val === '⌫') {
-          rockWeight.value = rockWeight.value.slice(0, -1);
-        } else {
-          rockWeight.value += val;
-        }
-      });
-    });
-
-    const rockWeight = document.getElementById('rockWeight');
-
-    document.getElementById('enterWeight').addEventListener('click', () => {
-      const weight = parseFloat(rockWeight.value);
-      if (!isNaN(weight)) {
-        rockWeights.push(weight);
-        rockWeight.value = '';
-        updateDisplay();
-        showToast('Rock added');
+    document.querySelectorAll(".numpad button").forEach(btn => btn.addEventListener("click", () => {
+      const key = btn.textContent;
+      if (key === "⌫") {
+        document.getElementById("rockWeight").value = document.getElementById("rockWeight").value.slice(0, -1);
+      } else {
+        document.getElementById("rockWeight").value += key;
       }
+    }));
+
+    document.getElementById("enterWeight").addEventListener("click", () => {
+      const val = parseFloat(document.getElementById("rockWeight").value);
+      if (!isNaN(val)) rockWeights.push(val);
+      document.getElementById("rockWeight").value = "";
+      updateDisplay();
     });
 
-    document.getElementById('saveLog').addEventListener('click', () => {
-      if (rockWeights.length === 0) return showToast('Enter weights first!');
-      const logs = JSON.parse(localStorage.getItem('bRockLogs') || '[]');
-      const total = rockWeights.length;
-      const totalWeight = rockWeights.reduce((sum, val) => sum + val, 0);
-      const avgWeight = total > 0 ? (totalWeight / total).toFixed(2) : 0;
-      const p540 = rockWeights.filter(w => w <= 540).length;
-      const p150 = rockWeights.filter(w => w <= 150).length;
-      const p75 = rockWeights.filter(w => w <= 75).length;
-      const percent540 = total ? (p540 / total * 100).toFixed(2) : 0;
-      const percent150 = total ? (p150 / total * 100).toFixed(2) : 0;
-      const percent75 = total ? (p75 / total * 100).toFixed(2) : 0;
+    document.getElementById("saveLog").addEventListener("click", () => {
+      if (!rockWeights.length) return showToast("No weights entered");
 
       const log = {
-        timestamp: new Date().toLocaleDateString(),
-        weights: [...rockWeights],
-        total,
-        totalWeight: totalWeight.toFixed(2),
-        avgWeight,
-        percent540,
-        percent150,
-        percent75
+        timestamp: new Date().toLocaleString(),
+        weights: [...rockWeights]
       };
-
+      const logs = JSON.parse(localStorage.getItem("bRockLogs") || "[]");
       logs.push(log);
-      localStorage.setItem('bRockLogs', JSON.stringify(logs));
-      rockWeights = [];
-      localStorage.removeItem('bRockAutosave');
+      localStorage.setItem("bRockLogs", JSON.stringify(logs));
+
       updateDisplay();
-      showToast('Log saved!');
-    });
-
-    document.getElementById('toggleBtn').addEventListener('click', () => {
-      const section = document.getElementById('advancedOptions');
-      section.style.display = section.style.display === 'none' ? 'block' : 'none';
-    });
-
-    document.getElementById('resetData').addEventListener('click', () => {
+      showToast("Log saved!");
       rockWeights = [];
-      localStorage.removeItem('bRockAutosave');
-      updateDisplay();
-      showToast('Rock list cleared');
     });
 
-    document.getElementById('viewLogs').addEventListener('click', () => {
-      const logs = JSON.parse(localStorage.getItem('bRockLogs') || '[]');
-      if (!logs.length) return showToast('No saved logs');
-      const summary = logs.map(log => `• ${log.timestamp} — ${log.total} rocks, Avg: ${log.avgWeight} lbs`).join('\n');
-      document.getElementById('savedLogs').innerHTML = `<h3>Saved Logs (${logs.length})</h3><pre>${summary}</pre>`;
+    document.getElementById("toggleBtn").addEventListener("click", () => {
+      const adv = document.getElementById("advancedOptions");
+      adv.style.display = adv.style.display === "none" ? "block" : "none";
+    });
+
+    document.getElementById("viewLogs").addEventListener("click", () => {
+      const logs = JSON.parse(localStorage.getItem("bRockLogs") || "[]");
+      document.getElementById("savedLogs").innerHTML = logs.map(l => `<pre>${l.timestamp}: ${l.weights.join(", ")}</pre>`).join("");
+    });
+
+    document.getElementById("downloadTxt").addEventListener("click", () => {
+      const logs = JSON.parse(localStorage.getItem("bRockLogs") || "[]");
+      if (!logs.length) return showToast("No log to download");
+      const last = logs[logs.length - 1];
+      const txt = `Date: ${last.timestamp}\nWeights: ${last.weights.join(", ")}`;
+      const blob = new Blob([txt], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `b_rock_log_${Date.now()}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    document.getElementById("downloadCsv").addEventListener("click", () => {
+      const logs = JSON.parse(localStorage.getItem("bRockLogs") || "[]");
+      if (!logs.length) return showToast("No log to download");
+      const last = logs[logs.length - 1];
+      const csv = `Date,${last.timestamp}\n${last.weights.join(",")}`;
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `b_rock_log_${Date.now()}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    document.getElementById("resetData").addEventListener("click", () => {
+      rockWeights = [];
+      updateDisplay();
+      showToast("Rock list reset");
     });
 
     updateDisplay();
