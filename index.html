@@ -30,21 +30,36 @@
       margin-bottom: 20px;
       position: relative;
     }
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #28a745;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      z-index: 1000;
+    }
+    .toast.show {
+      opacity: 1;
+    }
     .numpad {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
+      gap: 8px;
       margin-bottom: 20px;
     }
     .numpad button {
       width: 100%;
-      padding: 12px;
-      margin-bottom: 12px;
+      padding: 24px;
       background-color: #28a745;
       color: white;
       border: none;
-      border-radius: 8px;
-      font-size: 1.1rem;
+      border-radius: 10px;
+      font-size: 1.5rem;
       cursor: pointer;
       transition: background-color 0.2s;
       touch-action: manipulation;
@@ -146,12 +161,69 @@
     <div id="rockList"></div>
     <div id="savedLogs"></div>
   </div>
+  <div id="toast" class="toast"></div>
   <script>
     let rockWeights = JSON.parse(localStorage.getItem('bRockAutosave') || '[]');
-    let currentLog = {};
 
     function updateDisplay() {
       localStorage.setItem('bRockAutosave', JSON.stringify(rockWeights));
+      const total = rockWeights.length;
+      const totalWeight = rockWeights.reduce((a, b) => a + b, 0);
+      const avgWeight = total > 0 ? (totalWeight / total).toFixed(2) : 0;
+      const p540 = rockWeights.filter(w => w <= 540).length;
+      const p150 = rockWeights.filter(w => w <= 150).length;
+      const p75 = rockWeights.filter(w => w <= 75).length;
+      const percent540 = total ? (p540 / total * 100).toFixed(2) : 0;
+      const percent150 = total ? (p150 / total * 100).toFixed(2) : 0;
+      const percent75 = total ? (p75 / total * 100).toFixed(2) : 0;
+
+      document.getElementById('results').innerHTML = `
+        <p>Total rocks weighed: ${total}</p>
+        <p>Total weight: ${totalWeight.toFixed(2)} lbs</p>
+        <p>Average weight: ${avgWeight} lbs</p>
+        <details><summary>Percent Passing</summary>
+          <p>≤ 540 lbs: ${percent540}%</p>
+          <p>≤ 150 lbs: ${percent150}%</p>
+          <p>≤ 75 lbs: ${percent75}%</p>
+        </details>
+      `;
+
+      document.getElementById('rockList').innerHTML = `<p><strong>Rocks Entered:</strong></p><pre>${rockWeights.map((w, i) => `${i + 1}: ${w} lbs`).join('\n')}</pre>`;
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    document.querySelectorAll('.numpad button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const val = btn.textContent;
+        if (val === '⌫') {
+          rockWeight.value = rockWeight.value.slice(0, -1);
+        } else {
+          rockWeight.value += val;
+        }
+      });
+    });
+
+    const rockWeight = document.getElementById('rockWeight');
+
+    document.getElementById('enterWeight').addEventListener('click', () => {
+      const weight = parseFloat(rockWeight.value);
+      if (!isNaN(weight)) {
+        rockWeights.push(weight);
+        rockWeight.value = '';
+        updateDisplay();
+        showToast('Rock added');
+      }
+    });
+
+    document.getElementById('saveLog').addEventListener('click', () => {
+      if (rockWeights.length === 0) return showToast('Enter weights first!');
+      const logs = JSON.parse(localStorage.getItem('bRockLogs') || '[]');
       const total = rockWeights.length;
       const totalWeight = rockWeights.reduce((sum, val) => sum + val, 0);
       const avgWeight = total > 0 ? (totalWeight / total).toFixed(2) : 0;
@@ -162,7 +234,7 @@
       const percent150 = total ? (p150 / total * 100).toFixed(2) : 0;
       const percent75 = total ? (p75 / total * 100).toFixed(2) : 0;
 
-      currentLog = {
+      const log = {
         timestamp: new Date().toLocaleDateString(),
         weights: [...rockWeights],
         total,
@@ -173,103 +245,34 @@
         percent75
       };
 
-      document.getElementById('results').innerHTML = `
-        <p><strong>Total rocks:</strong> ${total}</p>
-        <p><strong>Total weight:</strong> ${totalWeight.toFixed(2)} lbs</p>
-        <p><strong>Average weight:</strong> ${avgWeight} lbs</p>
-        <details><summary>Percent Passing</summary>
-        <p>≤540 lbs: ${percent540}%</p>
-        <p>≤150 lbs: ${percent150}%</p>
-        <p>≤75 lbs: ${percent75}%</p></details>
-      `;
-
-      document.getElementById('rockList').innerHTML = `<p><strong>Rocks:</strong></p><pre>${rockWeights.map((w, i) => `${i + 1}: ${w} lbs`).join('\n')}</pre>`;
-    }
-
-    window.addEventListener('DOMContentLoaded', () => {
-      document.querySelectorAll('.numpad button').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const input = document.getElementById('rockWeight');
-          if (btn.id === 'clearWeight') {
-            input.value = input.value.slice(0, -1);
-          } else {
-            input.value += btn.textContent;
-          }
-        });
-      });
-
-      document.getElementById('enterWeight').addEventListener('click', () => {
-        const input = document.getElementById('rockWeight');
-        const val = parseFloat(input.value);
-        if (!isNaN(val)) {
-          rockWeights.push(val);
-          input.value = '';
-          updateDisplay();
-        }
-      });
-
-      document.getElementById('saveLog').addEventListener('click', () => {
-        if (rockWeights.length === 0) return alert('Add some rocks first!');
-        const logs = JSON.parse(localStorage.getItem('bRockLogs') || '[]');
-        logs.push(currentLog);
-        localStorage.setItem('bRockLogs', JSON.stringify(logs));
-        localStorage.removeItem('bRockAutosave');
-        rockWeights = [];
-        updateDisplay();
-
-        const container = document.createElement('div');
-        container.innerHTML = `
-          <button onclick="downloadTxt()">Save as .txt</button>
-          <button onclick="downloadCsv()">Save as .csv</button>
-          <button onclick="this.parentElement.remove()">Neither</button>
-        `;
-        document.body.appendChild(container);
-      });
-
-      document.getElementById('toggleBtn').addEventListener('click', () => {
-        const adv = document.getElementById('advancedOptions');
-        adv.style.display = adv.style.display === 'none' ? 'block' : 'none';
-      });
-
-      document.getElementById('viewLogs').addEventListener('click', () => {
-        const logs = JSON.parse(localStorage.getItem('bRockLogs') || '[]');
-        if (!logs.length) return document.getElementById('savedLogs').innerHTML = '<p>No saved logs.</p>';
-        const summary = logs.map(log => `• ${log.timestamp} — ${log.total} rocks`).join('\n');
-        document.getElementById('savedLogs').innerHTML = `<h3>Saved Logs (${logs.length})</h3><pre>${summary}</pre>`;
-      });
-
-      document.getElementById('downloadTxt').addEventListener('click', downloadTxt);
-      document.getElementById('downloadCsv').addEventListener('click', downloadCsv);
-      document.getElementById('resetData').addEventListener('click', () => {
-        rockWeights = [];
-        updateDisplay();
-      });
-
+      logs.push(log);
+      localStorage.setItem('bRockLogs', JSON.stringify(logs));
+      rockWeights = [];
+      localStorage.removeItem('bRockAutosave');
       updateDisplay();
+      showToast('Log saved!');
     });
 
-    function downloadTxt() {
-      const log = currentLog;
-      const content = `Date: ${log.timestamp}\nTotal Rocks: ${log.total}\nTotal Weight: ${log.totalWeight}\nAverage Weight: ${log.avgWeight}\nPassing ≤540 lbs: ${log.percent540}%\nPassing ≤150 lbs: ${log.percent150}%\nPassing ≤75 lbs: ${log.percent75}%\n\nWeights: ${log.weights.join(', ')}`;
-      const blob = new Blob([content], { type: 'text/plain' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `b_rock_log_${new Date().toISOString().split('T')[0]}.txt`;
-      a.click();
-    }
+    document.getElementById('toggleBtn').addEventListener('click', () => {
+      const section = document.getElementById('advancedOptions');
+      section.style.display = section.style.display === 'none' ? 'block' : 'none';
+    });
 
-    function downloadCsv() {
-      const log = currentLog;
-      const csv = [
-        ['Date', 'Total Rocks', 'Total Weight', 'Average Weight', '% ≤540', '% ≤150', '% ≤75', ...log.weights.map((_, i) => `Stone ${i + 1}`)],
-        [log.timestamp, log.total, log.totalWeight, log.avgWeight, log.percent540, log.percent150, log.percent75, ...log.weights]
-      ].map(row => row.join(',')).join('\n');
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `b_rock_log_${new Date().toISOString().split('T')[0]}.csv`;
-      a.click();
-    }
+    document.getElementById('resetData').addEventListener('click', () => {
+      rockWeights = [];
+      localStorage.removeItem('bRockAutosave');
+      updateDisplay();
+      showToast('Rock list cleared');
+    });
+
+    document.getElementById('viewLogs').addEventListener('click', () => {
+      const logs = JSON.parse(localStorage.getItem('bRockLogs') || '[]');
+      if (!logs.length) return showToast('No saved logs');
+      const summary = logs.map(log => `• ${log.timestamp} — ${log.total} rocks, Avg: ${log.avgWeight} lbs`).join('\n');
+      document.getElementById('savedLogs').innerHTML = `<h3>Saved Logs (${logs.length})</h3><pre>${summary}</pre>`;
+    });
+
+    updateDisplay();
   </script>
 </body>
 </html>
