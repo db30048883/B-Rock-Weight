@@ -176,19 +176,15 @@
       const total = rockWeights.length;
       const totalWeight = rockWeights.reduce((a, b) => a + b, 0);
       const avg = total ? (totalWeight / total).toFixed(2) : 0;
-      const passing540 = rockWeights.filter(w => w <= 540).length;
-      const passing150 = rockWeights.filter(w => w <= 150).length;
-      const passing75 = rockWeights.filter(w => w <= 75).length;
+      const passingWeight = rockWeights.filter(w => w <= 540).reduce((a, b) => a + b, 0);
+      const percentPassing = totalWeight > 0 ? (passingWeight / totalWeight * 100).toFixed(2) : 0;
 
       document.getElementById("results").innerHTML = `
         <p>Total rocks: ${total}</p>
         <p>Total weight: ${totalWeight.toFixed(2)} lbs</p>
         <p>Average weight: ${avg} lbs</p>
-        <details><summary>Passing Percentages</summary>
-          <p>≤ 540 lbs: ${(passing540 / total * 100 || 0).toFixed(2)}%</p>
-          <p>≤ 150 lbs: ${(passing150 / total * 100 || 0).toFixed(2)}%</p>
-          <p>≤ 75 lbs: ${(passing75 / total * 100 || 0).toFixed(2)}%</p>
-        </details>`;
+        <p>Percent Passing (≤ 540 lbs): ${percentPassing}%</p>
+      `;
 
       document.getElementById("rockList").innerHTML = `<pre>${rockWeights.map((w, i) => `${i + 1}: ${w}`).join("\n")}</pre>`;
     }
@@ -223,6 +219,7 @@
       updateDisplay();
       showToast("Log saved!");
       rockWeights = [];
+      updateDisplay();
     });
 
     document.getElementById("toggleBtn").addEventListener("click", () => {
@@ -242,20 +239,13 @@
       const total = last.weights.length;
       const totalWeight = last.weights.reduce((a, b) => a + b, 0);
       const avg = total ? (totalWeight / total).toFixed(2) : 0;
-      const passing540 = last.weights.filter(w => w <= 540).length;
-      const passing150 = last.weights.filter(w => w <= 150).length;
-      const passing75 = last.weights.filter(w => w <= 75).length;
-      const percent540 = total ? (passing540 / total * 100).toFixed(2) : 0;
-      const percent150 = total ? (passing150 / total * 100).toFixed(2) : 0;
-      const percent75 = total ? (passing75 / total * 100).toFixed(2) : 0;
+      const passingWeight = last.weights.filter(w => w <= 540).reduce((a, b) => a + b, 0);
+      const percentPassing = totalWeight > 0 ? (passingWeight / totalWeight * 100).toFixed(2) : 0;
 
-      const txt = `Date: ${last.timestamp}
-Total Rocks: ${total}
+      const txt = `Total Rocks: ${total}
 Total Weight: ${totalWeight.toFixed(2)} lbs
 Average Weight: ${avg} lbs
-Percent Passing (≤540 lbs): ${percent540}%
-Percent Passing (≤150 lbs): ${percent150}%
-Percent Passing (≤75 lbs): ${percent75}%
+Percent Passing (≤540 lbs): ${percentPassing}%
 Weights: ${last.weights.join(", ")}`;
       const blob = new Blob([txt], { type: "text/plain" });
       const url = URL.createObjectURL(blob);
@@ -273,15 +263,11 @@ Weights: ${last.weights.join(", ")}`;
       const total = last.weights.length;
       const totalWeight = last.weights.reduce((a, b) => a + b, 0);
       const avg = total ? (totalWeight / total).toFixed(2) : 0;
-      const passing540 = last.weights.filter(w => w <= 540).length;
-      const passing150 = last.weights.filter(w => w <= 150).length;
-      const passing75 = last.weights.filter(w => w <= 75).length;
-      const percent540 = total ? (passing540 / total * 100).toFixed(2) : 0;
-      const percent150 = total ? (passing150 / total * 100).toFixed(2) : 0;
-      const percent75 = total ? (passing75 / total * 100).toFixed(2) : 0;
+      const passingWeight = last.weights.filter(w => w <= 540).reduce((a, b) => a + b, 0);
+      const percentPassing = totalWeight > 0 ? (passingWeight / totalWeight * 100).toFixed(2) : 0;
 
-      const csv = `Total Rocks,Total Weight,Average Weight,≤540%,≤150%,≤75%,${last.weights.map((_, i) => `Rock ${i+1}`).join(",")}
-${total},${totalWeight.toFixed(2)},${avg},${percent540}%,${percent150}%,${percent75}%,${last.weights.join(",")}`;
+      const csv = `Total Rocks,Total Weight,Average Weight,≤540%,${last.weights.map((_, i) => `Rock ${i+1}`).join(",")}
+${total},${totalWeight.toFixed(2)},${avg},${percentPassing}%,${last.weights.join(",")}`;
       const blob = new Blob([csv], { type: "text/csv" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
