@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>B-Rock Gradation</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link rel="manifest" href="manifest.json">
   <style>
     body {
@@ -30,7 +30,6 @@
       margin-bottom: 20px;
       position: relative;
     }
-    
     .numpad {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -45,6 +44,7 @@
       border: none;
       border-radius: 8px;
       transition: background-color 0.2s;
+      touch-action: manipulation;
     }
     .numpad button:hover {
       background-color: #3a3a3a;
@@ -71,9 +71,13 @@
       font-size: 1.1rem;
       cursor: pointer;
       transition: background-color 0.2s;
+      touch-action: manipulation;
     }
     button:hover {
       background-color: #218838;
+    }
+    #saveLog, #toggleBtn {
+      background-color: orange;
     }
     #results, #savedLogs, #rockList {
       margin-top: 24px;
@@ -99,6 +103,24 @@
     }
     details[open] summary {
       margin-bottom: 10px;
+    }
+    .edit-input {
+      width: 60px;
+      font-size: 1rem;
+      padding: 4px;
+      background: #333;
+      color: white;
+      border: 1px solid #666;
+      border-radius: 4px;
+    }
+    .delete-btn {
+      background: none;
+      color: #ff5c5c;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      margin-left: 8px;
+      vertical-align: middle;
     }
   </style>
 </head>
@@ -163,80 +185,10 @@
         const val = parseFloat(weightInput.value);
         if (!isNaN(val)) {
           rockWeights.push(val);
+          localStorage.setItem('bRockData', JSON.stringify(rockWeights));
           weightInput.value = '';
           updateDisplay();
         }
-      });
-
-      document.getElementById('saveLog').addEventListener('click', () => {
-        if (rockWeights.length === 0) {
-          alert('No rocks to save.');
-          return;
-        }
-
-        localStorage.setItem('bRockData', JSON.stringify(rockWeights));
-        const choice = prompt('Save log as:\n1 = .txt\n2 = .csv\nCancel or other = neither');
-
-        if (choice === '1') {
-          const content = rockWeights.map((w, i) => `${i + 1}: ${w} lbs`).join('\n');
-          const blob = new Blob([content], { type: 'text/plain' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'b_rock_log.txt';
-          a.click();
-          URL.revokeObjectURL(url);
-        } else if (choice === '2') {
-          const csv = rockWeights.map((w, i) => `${i + 1},${w}`).join('\n');
-          const blob = new Blob([csv], { type: 'text/csv' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'b_rock_log.csv';
-          a.click();
-          URL.revokeObjectURL(url);
-        } else {
-          alert('Log saved without download.');
-        }
-
-        rockWeights = [];
-        localStorage.removeItem('bRockData');
-        updateDisplay();
-        alert('Log finalized and cleared.');
-      });
-
-      document.getElementById('viewLogs').addEventListener('click', () => {
-        const saved = JSON.parse(localStorage.getItem('bRockData') || '[]');
-        const log = saved.map((w, i) => `${i + 1}: ${w} lbs`).join('\n');
-        document.getElementById('savedLogs').innerHTML = `<pre>${log}</pre>`;
-      });
-
-      document.getElementById('downloadTxt').addEventListener('click', () => {
-        const content = rockWeights.map((w, i) => `${i + 1}: ${w} lbs`).join('\n');
-        const blob = new Blob([content], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'b_rock_log.txt';
-        a.click();
-        URL.revokeObjectURL(url);
-      });
-
-      document.getElementById('downloadCsv').addEventListener('click', () => {
-        const csv = rockWeights.map((w, i) => `${i + 1},${w}`).join('\n');
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'b_rock_log.csv';
-        a.click();
-        URL.revokeObjectURL(url);
-      });
-
-      document.getElementById('resetData').addEventListener('click', () => {
-        rockWeights = [];
-        localStorage.removeItem('bRockData');
-        updateDisplay();
       });
 
       function updateDisplay() {
@@ -246,7 +198,6 @@
         const p540 = rockWeights.filter(w => w <= 540).length;
         const p150 = rockWeights.filter(w => w <= 150).length;
         const p75 = rockWeights.filter(w => w <= 75).length;
-        const rockList = rockWeights.map((w, i) => `${i + 1}: ${w} lbs`).join('\n');
 
         document.getElementById('results').innerHTML = `
           <p>Total rocks: ${total}</p>
@@ -259,8 +210,26 @@
             <p>≤ 75 lbs: ${(total ? (p75 / total * 100).toFixed(2) : 0)}%</p>
           </details>
         `;
-        document.getElementById('rockList').innerHTML = `<pre>${rockList}</pre>`;
+
+        document.getElementById('rockList').innerHTML = '<pre>' + rockWeights.map((w, i) => {
+          return `${i + 1}: <input class="edit-input" type="number" value="${w}" onchange="editWeight(${i}, this.value)"> lbs <button class="delete-btn" onclick="deleteWeight(${i})">×</button>`;
+        }).join('\n') + '</pre>';
       }
+
+      window.editWeight = (index, value) => {
+        const val = parseFloat(value);
+        if (!isNaN(val)) {
+          rockWeights[index] = val;
+          localStorage.setItem('bRockData', JSON.stringify(rockWeights));
+          updateDisplay();
+        }
+      };
+
+      window.deleteWeight = (index) => {
+        rockWeights.splice(index, 1);
+        localStorage.setItem('bRockData', JSON.stringify(rockWeights));
+        updateDisplay();
+      };
 
       updateDisplay();
     });
