@@ -280,8 +280,8 @@ Weights: ${last.weights.join(", ")}`;
       const percent150 = total ? (passing150 / total * 100).toFixed(2) : 0;
       const percent75 = total ? (passing75 / total * 100).toFixed(2) : 0;
 
-      const csv = `Date,Total Rocks,Total Weight,Average Weight,≤540%,≤150%,≤75%,${last.weights.map((_, i) => `Rock ${i+1}`).join(",")}
-${last.timestamp},${total},${totalWeight.toFixed(2)},${avg},${percent540}%,${percent150}%,${percent75}%,${last.weights.join(",")}`;
+      const csv = `Total Rocks,Total Weight,Average Weight,≤540%,≤150%,≤75%,${last.weights.map((_, i) => `Rock ${i+1}`).join(",")}
+,${total},${totalWeight.toFixed(2)},${avg},${percent540}%,${percent150}%,${percent75}%,${last.weights.join(",")}`;
       const blob = new Blob([csv], { type: "text/csv" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
