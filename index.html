@@ -37,14 +37,21 @@
       margin-bottom: 20px;
     }
     .numpad button {
-      padding: 20px;
-      font-size: 1.5rem;
-      background-color: #2a2a2a;
-      color: #f5f5f5;
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 12px;
+      background-color: #28a745;
+      color: white;
       border: none;
       border-radius: 8px;
+      font-size: 1.1rem;
+      cursor: pointer;
       transition: background-color 0.2s;
       touch-action: manipulation;
+    }
+    #enterWeight {
+      padding: 20px;
+      font-size: 1.4rem;
     }
     .numpad button:hover {
       background-color: #3a3a3a;
@@ -157,82 +164,6 @@
     <div id="rockList"></div>
     <div id="savedLogs"></div>
   </div>
-  <script>
-    function toggleAdvanced() {
-      const adv = document.getElementById('advancedOptions');
-      adv.style.display = adv.style.display === 'none' ? 'block' : 'none';
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      const weightInput = document.getElementById('rockWeight');
-      const numpadButtons = document.querySelectorAll('.numpad button');
-      const enterButton = document.getElementById('enterWeight');
-      let rockWeights = JSON.parse(localStorage.getItem('bRockData') || '[]');
-
-      document.getElementById('toggleBtn').addEventListener('click', toggleAdvanced);
-
-      numpadButtons.forEach(button => {
-        button.addEventListener('click', () => {
-          if (button.id === 'clearWeight') {
-            weightInput.value = weightInput.value.slice(0, -1);
-          } else {
-            weightInput.value += button.textContent;
-          }
-        });
-      });
-
-      enterButton.addEventListener('click', () => {
-        const val = parseFloat(weightInput.value);
-        if (!isNaN(val)) {
-          rockWeights.push(val);
-          localStorage.setItem('bRockData', JSON.stringify(rockWeights));
-          weightInput.value = '';
-          updateDisplay();
-        }
-      });
-
-      function updateDisplay() {
-        const total = rockWeights.length;
-        const totalWeight = rockWeights.reduce((sum, w) => sum + w, 0);
-        const avgWeight = total > 0 ? (totalWeight / total).toFixed(2) : 0;
-        const p540 = rockWeights.filter(w => w <= 540).length;
-        const p150 = rockWeights.filter(w => w <= 150).length;
-        const p75 = rockWeights.filter(w => w <= 75).length;
-
-        document.getElementById('results').innerHTML = `
-          <p>Total rocks: ${total}</p>
-          <p>Total weight: ${totalWeight.toFixed(2)} lbs</p>
-          <p>Average weight: ${avgWeight} lbs</p>
-          <details>
-            <summary>Percent Passing</summary>
-            <p>≤ 540 lbs: ${(total ? (p540 / total * 100).toFixed(2) : 0)}%</p>
-            <p>≤ 150 lbs: ${(total ? (p150 / total * 100).toFixed(2) : 0)}%</p>
-            <p>≤ 75 lbs: ${(total ? (p75 / total * 100).toFixed(2) : 0)}%</p>
-          </details>
-        `;
-
-        document.getElementById('rockList').innerHTML = '<pre>' + rockWeights.map((w, i) => {
-          return `${i + 1}: <input class="edit-input" type="number" value="${w}" onchange="editWeight(${i}, this.value)"> lbs <button class="delete-btn" onclick="deleteWeight(${i})">×</button>`;
-        }).join('\n') + '</pre>';
-      }
-
-      window.editWeight = (index, value) => {
-        const val = parseFloat(value);
-        if (!isNaN(val)) {
-          rockWeights[index] = val;
-          localStorage.setItem('bRockData', JSON.stringify(rockWeights));
-          updateDisplay();
-        }
-      };
-
-      window.deleteWeight = (index) => {
-        rockWeights.splice(index, 1);
-        localStorage.setItem('bRockData', JSON.stringify(rockWeights));
-        updateDisplay();
-      };
-
-      updateDisplay();
-    });
-  </script>
+  <script src="script.js"></script>
 </body>
 </html>
