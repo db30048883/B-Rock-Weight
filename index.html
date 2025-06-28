@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>B-Rock Gradation</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="manifest.json">
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #121212;
+      color: #e0e0e0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      background: #1e1e1e;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 0 30px rgba(0,0,0,0.4);
+      max-width: 600px;
+      width: 100%;
+    }
+    h1 {
+      text-align: center;
+      font-size: 2rem;
+      margin-bottom: 20px;
+      position: relative;
+    }
+    
+    .numpad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .numpad button {
+      padding: 20px;
+      font-size: 1.5rem;
+      background-color: #2a2a2a;
+      color: #f5f5f5;
+      border: none;
+      border-radius: 8px;
+      transition: background-color 0.2s;
+    }
+    .numpad button:hover {
+      background-color: #3a3a3a;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 15px;
+      margin-bottom: 20px;
+      border: none;
+      border-radius: 8px;
+      background-color: #333;
+      color: #fff;
+      font-size: 1.5rem;
+      text-align: center;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 12px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    button:hover {
+      background-color: #218838;
+    }
+    #results, #savedLogs, #rockList {
+      margin-top: 24px;
+    }
+    pre {
+      background-color: #2a2a2a;
+      padding: 15px;
+      border-radius: 8px;
+      overflow-x: auto;
+      color: #f0f0f0;
+    }
+    #advancedOptions button {
+      margin-top: 8px;
+      background-color: #444;
+    }
+    #advancedOptions button:hover {
+      background-color: #555;
+    }
+    details summary {
+      cursor: pointer;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    details[open] summary {
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>B-Rock Gradation</h1>
+    <form id="bRockForm" onsubmit="return false;">
+      <input type="text" id="rockWeight" placeholder="Enter rock weight (lbs)" readonly>
+      <div class="numpad">
+        <button type="button">1</button>
+        <button type="button">2</button>
+        <button type="button">3</button>
+        <button type="button">4</button>
+        <button type="button">5</button>
+        <button type="button">6</button>
+        <button type="button">7</button>
+        <button type="button">8</button>
+        <button type="button">9</button>
+        <button type="button">.</button>
+        <button type="button">0</button>
+        <button type="button" id="clearWeight">⌫</button>
+      </div>
+      <button type="button" id="enterWeight">Enter Weight</button>
+      <button type="button" id="saveLog">Finish + Save Log</button>
+      <button type="button" id="toggleBtn">More ▼</button>
+      <div id="advancedOptions" style="display:none;">
+        <button type="button" id="viewLogs">View Saved Logs</button>
+        <button type="button" id="downloadTxt">Download Last Log (.txt)</button>
+        <button type="button" id="downloadCsv">Download Last Log (.csv)</button>
+        <button type="button" id="resetData">Reset Rock List</button>
+      </div>
+    </form>
+    <div id="results"></div>
+    <div id="rockList"></div>
+    <div id="savedLogs"></div>
+  </div>
+  <script>
+    function toggleAdvanced() {
+      const adv = document.getElementById('advancedOptions');
+      adv.style.display = adv.style.display === 'none' ? 'block' : 'none';
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const weightInput = document.getElementById('rockWeight');
+      const numpadButtons = document.querySelectorAll('.numpad button');
+      const enterButton = document.getElementById('enterWeight');
+      let rockWeights = JSON.parse(localStorage.getItem('bRockData') || '[]');
+
+      document.getElementById('toggleBtn').addEventListener('click', toggleAdvanced);
+
+      numpadButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          if (button.id === 'clearWeight') {
+            weightInput.value = weightInput.value.slice(0, -1);
+          } else {
+            weightInput.value += button.textContent;
+          }
+        });
+      });
+
+      enterButton.addEventListener('click', () => {
+        const val = parseFloat(weightInput.value);
+        if (!isNaN(val)) {
+          rockWeights.push(val);
+          weightInput.value = '';
+          updateDisplay();
+        }
+      });
+
+      document.getElementById('saveLog').addEventListener('click', () => {
+        if (rockWeights.length === 0) {
+          alert('No rocks to save.');
+          return;
+        }
+
+        localStorage.setItem('bRockData', JSON.stringify(rockWeights));
+        const choice = prompt('Save log as:\n1 = .txt\n2 = .csv\nCancel or other = neither');
+
+        if (choice === '1') {
+          const content = rockWeights.map((w, i) => `${i + 1}: ${w} lbs`).join('\n');
+          const blob = new Blob([content], { type: 'text/plain' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'b_rock_log.txt';
+          a.click();
+          URL.revokeObjectURL(url);
+        } else if (choice === '2') {
+          const csv = rockWeights.map((w, i) => `${i + 1},${w}`).join('\n');
+          const blob = new Blob([csv], { type: 'text/csv' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'b_rock_log.csv';
+          a.click();
+          URL.revokeObjectURL(url);
+        } else {
+          alert('Log saved without download.');
+        }
+
+        rockWeights = [];
+        localStorage.removeItem('bRockData');
+        updateDisplay();
+        alert('Log finalized and cleared.');
+      });
+
+      document.getElementById('viewLogs').addEventListener('click', () => {
+        const saved = JSON.parse(localStorage.getItem('bRockData') || '[]');
+        const log = saved.map((w, i) => `${i + 1}: ${w} lbs`).join('\n');
+        document.getElementById('savedLogs').innerHTML = `<pre>${log}</pre>`;
+      });
+
+      document.getElementById('downloadTxt').addEventListener('click', () => {
+        const content = rockWeights.map((w, i) => `${i + 1}: ${w} lbs`).join('\n');
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'b_rock_log.txt';
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+
+      document.getElementById('downloadCsv').addEventListener('click', () => {
+        const csv = rockWeights.map((w, i) => `${i + 1},${w}`).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'b_rock_log.csv';
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+
+      document.getElementById('resetData').addEventListener('click', () => {
+        rockWeights = [];
+        localStorage.removeItem('bRockData');
+        updateDisplay();
+      });
+
+      function updateDisplay() {
+        const total = rockWeights.length;
+        const totalWeight = rockWeights.reduce((sum, w) => sum + w, 0);
+        const avgWeight = total > 0 ? (totalWeight / total).toFixed(2) : 0;
+        const p540 = rockWeights.filter(w => w <= 540).length;
+        const p150 = rockWeights.filter(w => w <= 150).length;
+        const p75 = rockWeights.filter(w => w <= 75).length;
+        const rockList = rockWeights.map((w, i) => `${i + 1}: ${w} lbs`).join('\n');
+
+        document.getElementById('results').innerHTML = `
+          <p>Total rocks: ${total}</p>
+          <p>Total weight: ${totalWeight.toFixed(2)} lbs</p>
+          <p>Average weight: ${avgWeight} lbs</p>
+          <details>
+            <summary>Percent Passing</summary>
+            <p>≤ 540 lbs: ${(total ? (p540 / total * 100).toFixed(2) : 0)}%</p>
+            <p>≤ 150 lbs: ${(total ? (p150 / total * 100).toFixed(2) : 0)}%</p>
+            <p>≤ 75 lbs: ${(total ? (p75 / total * 100).toFixed(2) : 0)}%</p>
+          </details>
+        `;
+        document.getElementById('rockList').innerHTML = `<pre>${rockList}</pre>`;
+      }
+
+      updateDisplay();
+    });
+  </script>
+</body>
+</html>
